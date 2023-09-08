@@ -25,6 +25,10 @@
  * Date: 24 December 2018
  */
 
+/* Fixed class usage condition for Gazebo major version compatibility 
+ * Date: 8 September 2023
+ */
+
 #include <math.h>
 #include <gazebo_model_velocity_plugin/gazebo_ros_model_velocity.h>
 
@@ -384,16 +388,22 @@ namespace gazebo
 #if (GAZEBO_MAJOR_VERSION >= 8)
       ignition::math::Pose3d pose = parent_->RelativePose();
       double yaw = pose.Rot().Yaw();
+
+      double x_vel_cmd = cmd.linear.x * cos(yaw) + cmd.linear.y * sin(yaw);
+      double y_vel_cmd = cmd.linear.x * sin(yaw) - cmd.linear.y * cos(yaw);
+
+      parent_->SetLinearVel(ignition::math::Vector3d(x_vel_cmd, y_vel_cmd, 0.0));
+      parent_->SetAngularVel(ignition::math::Vector3d(0.0, 0.0, cmd.angular.z));
 #else
       math::Pose pose = parent_->GetRelativePose();
       double yaw = pose.rot.GetYaw();
-#endif
+
       double x_vel_cmd = cmd.linear.x * cos(yaw) + cmd.linear.y * sin(yaw);
       double y_vel_cmd = cmd.linear.x * sin(yaw) - cmd.linear.y * cos(yaw);
 
       parent_->SetLinearVel(math::Vector3(x_vel_cmd, y_vel_cmd, 0.0));
       parent_->SetAngularVel(math::Vector3(0.0, 0.0, cmd.angular.z));
-
+#endif
       output_vel_pub_.publish(cmd);
       last_velocity_update_time_ = tnow;
     }
@@ -577,4 +587,3 @@ namespace gazebo
 
   GZ_REGISTER_MODEL_PLUGIN(GazeboRosModelVelocity)
 }
-
